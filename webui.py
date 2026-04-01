@@ -104,10 +104,8 @@ with open("examples/cases.jsonl", "r", encoding="utf-8") as f:
                              ])
 
 def start_cloudflare():
-    # Give the app 10 seconds to boot up and initialize models first
     time.sleep(10)
 
-    # Download cloudflared if it doesn't exist in the working directory
     if not os.path.exists("cloudflared"):
         print("\n[Cloudflare] Downloading binary...")
         subprocess.run(
@@ -122,7 +120,6 @@ def start_cloudflare():
         subprocess.run(["chmod", "+x", "cloudflared"])
 
     print("\n[Cloudflare] Booting Tunnel... Look below for your URL:")
-    # This will dump the URL directly into your terminal!
     subprocess.run(["./cloudflared", "tunnel", "--url", "http://127.0.0.1:7860"])
 
 def get_example_cases(include_experimental = False):
@@ -576,10 +573,17 @@ with gr.Blocks(title="IndexTTS Demo") as demo:
 
 
 if __name__ == "__main__":
-    # 1. Run Cloudflare in a separate daemon thread
+    # 1. Run Cloudflare in a separate thread
     threading.Thread(target=start_cloudflare, daemon=True).start()
 
-    # 2. Let the original repo launch its UI as intended
+    # 2. Launch the original Gradio UI
     demo.queue(20)
-    # We force port 7860 to match the Cloudflare target above
     demo.launch(server_name=cmd_args.host, server_port=7860)
+
+    # 3. Keep-alive loop to prevent Kaggle from shutting down the cell!
+    print("\n[System] Keep-alive active. Notebook will stay awake...")
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("\n[System] Shutting down gracefully...")
